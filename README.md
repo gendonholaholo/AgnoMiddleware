@@ -32,7 +32,7 @@ Berdasarkan backend Agen Cerdas saat ini, Agno Service ditempatkan sebagai micro
 5. Agno mengembalikan respons ke backend Laravel, yang kemudian meneruskannya ke WhatsApp atau Webchat.
 6. Jika AI mengalami kesulitan menjawab, Agno bisa mengarahkan request ke Human Agent secara otomatis.
 
-### **Perbaikan dari Arsitektur Sebelumnya**
+### **Apakah Ini Benar?**
 
 1. **Integrasi dengan Backend Laravel Lebih Detail**
    - Komunikasi dapat dilakukan via **REST API atau WebSocket** untuk interaksi real-time.
