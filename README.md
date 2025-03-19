@@ -27,7 +27,7 @@ Berdasarkan backend Agen Cerdas saat ini, Agno Service akan saya tempatkan sebag
 ### **Alur Kerja Agno Service (Dengan Event-Driven)**
 
 1. User mengirim pesan ke chatbot melalui WhatsApp atau Webchat.
-2. Backend Laravel **mem-publish event** ke event bus (Kafka / RabbitMQ) untuk diteruskan ke Agno Service.
+2. **Mem-publish event** event bus yang akan di-consume oleh service lainnya.
 3. Agno Service menerima event tersebut dan memproses pesan menggunakan AI yang telah dikonfigurasi.
 4. Jika ada knowledge base yang relevan, Agno mencari jawaban berdasarkan data yang tersedia.
 5. Agno mem-publish event berisi hasil AI processing ke event bus, yang kemudian diambil oleh backend Laravel untuk diteruskan ke WhatsApp atau Webchat.
