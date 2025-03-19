@@ -8,53 +8,44 @@ Agno Service adalah microservice yang memisahkan "AI orchestration" untuk custom
 3. **Memudahkan integrasi dengan berbagai model AI**, baik berbasis OpenAI, self-hosted LLM, atau fine-tuned AI lainnya.
 4. **Menerapkan arsitektur microservice** agar lebih scalable dan maintainable.
 
-**Di mana Agno harus ditempatkan dalam sistem backend?**
-Berdasarkan backend Agen Cerdas saat ini, Agno Service ditempatkan sebagai microservice yang berdiri sendiri dan bertindak sebagai middleware antara backend Laravel dan AI processing.
+**Di mana saya akan Agno menempatkannya di dalam sistem backend?**
+Berdasarkan backend Agen Cerdas saat ini, Agno Service akan saya tempatkan sebagai microservice yang berdiri sendiri dan bertindak sebagai middleware antara backend Laravel dan AI processing.
 
 ---
 
-### **Teknologi dan Komponen**
+### **Teknologi dan Komponen (Event-Driven Arch)**
 
 | **Komponen**         | **Teknologi**                      | **Fungsi**                                       |
 |----------------------|--------------------------------|------------------------------------------------|
-| API Gateway         | FastAPI (Python)              | Memproses request dari backend Laravel         |
-| AI Processing      | OpenAI, Local LLM (Llama/Mistral), Rasa NLU | Menjalankan inferensi AI                     |
-| Queue Management   | Redis + Celery (Python)       | Mengatur antrian AI processing                 |
-| WebSocket         | FastAPI WebSocket              | Komunikasi real-time dengan backend Laravel    |
-| Logging & Monitoring | Prometheus + Grafana, MongoDB | Memantau performa AI dan menyimpan history AI logs |
+| **Event Bus**       | Kafka / RabbitMQ              | Menyediakan event-driven komunikasi antar layanan |
+| **API Gateway**     | FastAPI (Python)              | Memproses request dari backend Laravel dan meneruskan event |
+| **AI Processing**   | OpenAI, Local LLM (Llama/Mistral), Rasa NLU | Menjalankan inferensi AI dan mengirimkan hasilnya melalui event |
+| **Queue Management**| Redis + Celery (Python)       | Mengatur antrian AI processing untuk skalabilitas tinggi |
+| **WebSocket**       | FastAPI WebSocket              | Komunikasi real-time dengan backend Laravel     |
+| **Logging & Monitoring** | Prometheus + Grafana, MongoDB | Memantau performa AI dan menyimpan history AI logs |
 
-### **Alur Kerja Agno Service**
+### **Alur Kerja Agno Service (Dengan Event-Driven)**
 
 1. User mengirim pesan ke chatbot melalui WhatsApp atau Webchat.
-2. Backend Laravel menerima request dan meneruskannya ke Agno Service.
-3. Agno Service memproses pesan menggunakan AI yang telah dikonfigurasi.
+2. Backend Laravel **mem-publish event** ke event bus (Kafka / RabbitMQ) untuk diteruskan ke Agno Service.
+3. Agno Service menerima event tersebut dan memproses pesan menggunakan AI yang telah dikonfigurasi.
 4. Jika ada knowledge base yang relevan, Agno mencari jawaban berdasarkan data yang tersedia.
-5. Agno mengembalikan respons ke backend Laravel, yang kemudian meneruskannya ke WhatsApp atau Webchat.
-6. Jika AI mengalami kesulitan menjawab, Agno bisa mengarahkan request ke Human Agent secara otomatis.
-
-### **Apakah Ini Benar?**
-
-1. **Integrasi dengan Backend Laravel Lebih Detail**
-   - Komunikasi dapat dilakukan via **REST API atau WebSocket** untuk interaksi real-time.
-   - **Autentikasi request** dari Laravel ke Agno dilakukan menggunakan API Key atau JWT.
-   - **Format data request/response** sudah ditentukan agar tidak terjadi kesalahan komunikasi.
-
-2. **Peningkatan Logging dan Error Handling**
-   - **Strategi retry** jika AI tidak merespons dalam waktu tertentu.
-   - Logging mencakup monitoring performa dan debugging error.
-   - **Sistem logging tambahan seperti ELK Stack atau Graylog** untuk pencatatan yang lebih mendetail.
-
-3. **Optimasi Pemilihan Model AI**
-   - Menambahkan **model registry** untuk menentukan AI model mana yang akan digunakan sesuai skenario.
-   - Fleksibilitas memilih **OpenAI, Llama, atau Rasa NLU** berdasarkan kebutuhan dan biaya.
-
-4. **Database AI Log Lebih Terstruktur**
-   - MongoDB digunakan untuk menyimpan **user ID, timestamp, model yang digunakan, confidence score, response time, dan logs lainnya**.
-   - Jika dibutuhkan analisis mendalam, data bisa diintegrasikan dengan **PostgreSQL atau Elasticsearch**.
-
-5. **Scalability dan Failover**
-   - **AI processing dapat dijalankan di server terpisah** untuk mengurangi beban backend utama.
-   - **Fallback AI Model**: Jika model utama gagal, request bisa dialihkan ke model cadangan.
-   - **Redis Queue Management** memastikan setiap request AI diproses secara optimal.
+5. Agno mem-publish event berisi hasil AI processing ke event bus, yang kemudian diambil oleh backend Laravel untuk diteruskan ke WhatsApp atau Webchat.
+6. Jika AI mengalami kesulitan menjawab, Agno bisa mengarahkan request ke Human Agent secara otomatis dengan event-driven message routing.
 
 ---
+
+### **Perbandingan Situasi Saat Ini dan Setelah Perubahan**
+
+| **Fitur**                 | **Backend Saat Ini** (Monolitik) | **Backend Setelah Perubahan** (Event-Driven Microservice) |
+|---------------------------|--------------------------------|------------------------------------------------|
+| **Request Handling**      | Synchronous API calls         | Event-driven dengan Kafka / RabbitMQ         |
+| **AI Processing**         | Langsung diproses di Laravel  | Dijalankan di microservice AI yang terpisah   |
+| **Queue Management**      | Redis hanya opsional         | Redis + Celery sebagai core antrian           |
+| **WebSocket Communication** | Laravel Reverb (WebSocket) | FastAPI WebSocket + Event Bus                 |
+| **Scalability**           | Terbatas karena monolitik    | Horizontal scaling dengan event-driven        |
+| **Monitoring & Logging**  | Basic logging dengan Laravel | Prometheus + Grafana + MongoDB log analysis   |
+| **Respon AI ke Laravel**  | Direct API response         | Event-driven message passing                  |
+
+---
+~ Mas Gendon
